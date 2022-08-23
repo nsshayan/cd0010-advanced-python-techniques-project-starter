@@ -43,6 +43,15 @@ class NEODatabase:
         self._approaches = approaches
 
         # TODO: What additional auxiliary data structures will be useful?
+        self.pdes_dict = {neo.designation: index for index, neo in enumerate(self._neos)}
+
+        for approach in self._approaches:
+            if approach.designation in self.pdes_dict.keys():
+                approach.neo = self._neos[self.pdes_dict[approach.designation]]
+                self._neos[self.pdes_dict[approach.designation]].approaches.append(approach)
+
+        self._des_to_neo = {neo.designation: neo for neo in self._neos}
+        self.name_to_neo = {neo.name: neo for neo in self._neos}
 
         # TODO: Link together the NEOs and their close approaches.
 
@@ -60,7 +69,7 @@ class NEODatabase:
         :return: The `NearEarthObject` with the desired primary designation, or `None`.
         """
         # TODO: Fetch an NEO by its primary designation.
-        return None
+        return self._des_to_neo.get(designation.upper(), None)
 
     def get_neo_by_name(self, name):
         """Find and return an NEO by its name.
@@ -77,7 +86,7 @@ class NEODatabase:
         :return: The `NearEarthObject` with the desired name, or `None`.
         """
         # TODO: Fetch an NEO by its name.
-        return None
+        return self.name_to_neo.get(name.capitalize(), None)
 
     def query(self, filters=()):
         """Query close approaches to generate those that match a collection of filters.
@@ -94,5 +103,11 @@ class NEODatabase:
         :return: A stream of matching `CloseApproach` objects.
         """
         # TODO: Generate `CloseApproach` objects that match all of the filters.
-        for approach in self._approaches:
-            yield approach
+        if filters:
+            for approach in self._approaches:
+                if all(map(lambda f: f(approach), filters)):
+                    yield approach
+        else:
+            # return all the close approaches if they are no filters
+            for approach in self._approaches:
+                yield approach

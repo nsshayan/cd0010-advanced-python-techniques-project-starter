@@ -72,6 +72,50 @@ class AttributeFilter:
         return f"{self.__class__.__name__}(op=operator.{self.op.__name__}, value={self.value})"
 
 
+class DateFilter(AttributeFilter):
+    """Subclass of AttributeFilter to filter CloseApproach objects by date."""
+
+    @classmethod
+    def get(cls, approach):
+        """Return approach.time converted to datetime.datetime object for the date filter.
+
+        Args:
+            approach (CloseApproach): A CloseApproach object.
+        Returns:
+            [datetime.datetime]: Converted time to datetime object.
+
+        """
+        return approach.time.date()
+
+#Distance Filter
+class DF(AttributeFilter):
+
+    @classmethod
+    def get(cls, approach):
+        return approach.distance
+
+# Velocity Filter
+class VF(AttributeFilter):
+
+    @classmethod
+    def get(cls, approach):
+        return approach.velocity
+
+
+class DiF(AttributeFilter):
+
+    @classmethod
+    def get(cls, approach):
+        return approach.neo.diameter
+
+
+class HF(AttributeFilter):
+
+    @classmethod
+    def get(cls, approach):
+        return approach.neo.hazardous
+
+
 def create_filters(
         date=None, start_date=None, end_date=None,
         distance_min=None, distance_max=None,
@@ -109,7 +153,30 @@ def create_filters(
     :return: A collection of filters for use with `query`.
     """
     # TODO: Decide how you will represent your filters.
-    return ()
+    filters = []
+
+    if date:
+        filters.append(DateFilter(operator.eq, date))
+    if start_date:
+        filters.append(DateFilter(operator.ge, start_date))
+    if end_date:
+        filters.append(DateFilter(operator.le, end_date))
+    if distance_min:
+        filters.append(DF(operator.ge, distance_min))
+    if distance_max:
+        filters.append(DF(operator.le, distance_max))
+    if velocity_min:
+        filters.append(VF(operator.ge, velocity_min))
+    if velocity_max:
+        filters.append(VF(operator.le, velocity_max))
+    if diameter_min:
+        filters.append(DiF(operator.ge, diameter_min))
+    if diameter_max:
+        filters.append(DiF(operator.le, diameter_max))
+    if hazardous is not None:
+        filters.append(HF(operator.eq, hazardous))
+
+    return filters
 
 
 def limit(iterator, n=None):
@@ -122,4 +189,6 @@ def limit(iterator, n=None):
     :yield: The first (at most) `n` values from the iterator.
     """
     # TODO: Produce at most `n` values from the given iterator.
-    return iterator
+    if n == 0 or n is None:
+        return iterator
+    return [x for i, x in enumerate(iterator) if i < n]
